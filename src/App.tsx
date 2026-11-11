@@ -365,6 +365,56 @@ export default function SolutionPlaceLanding() {
       return;
     }
 
+    // Identificador único de evento para desduplicação perfeita entre Navegador (Pixel) e Servidor (CAPI)
+    const eventId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const nameParts = formData.nome.trim().split(" ");
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+    const cleanPhone = formData.telefone.replace(/\D/g, "");
+
+    // 1. Disparo no Navegador (Meta Pixel)
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      try {
+        (window as any).fbq(
+          "track",
+          "Lead",
+          {
+            content_name: formData.veiculo,
+            content_category: formData.ano,
+            value: 0,
+            currency: "BRL",
+          },
+          { eventID: eventId }
+        );
+      } catch (err) {
+        console.error("Erro ao disparar Meta Pixel:", err);
+      }
+    }
+
+    // 2. Disparo no Servidor (Meta Conversions API - CAPI)
+    try {
+      fetch("/api/meta-capi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event_name: "Lead",
+          event_id: eventId,
+          user_data: {
+            first_name: firstName,
+            last_name: lastName,
+            phone: cleanPhone,
+          },
+          custom_data: {
+            content_name: formData.veiculo,
+            content_category: formData.ano,
+          },
+          event_source_url: window.location.href,
+        }),
+      }).catch((capiErr) => console.error("Erro CAPI:", capiErr));
+    } catch {
+      // Ignora erro assíncrono para não interromper a conversão do usuário
+    }
+
     // Salva histórico de lead no navegador
     try {
       const stored = localStorage.getItem("solution_place_leads");
@@ -808,6 +858,11 @@ export default function SolutionPlaceLanding() {
                   href={lastSubmittedLead ? generateWhatsAppUrl(lastSubmittedLead) : `https://wa.me/${WHATSAPP_NUMBER}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    if (typeof window !== "undefined" && (window as any).fbq) {
+                      (window as any).fbq("track", "Contact");
+                    }
+                  }}
                   className="w-full py-3.5 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg"
                 >
                   <MessageSquare className="w-4 h-4" />
@@ -1169,6 +1224,25 @@ export default function SolutionPlaceLanding() {
           </p>
         </footer>
       </main>
+
+      {/* Botão Flutuante Oficial do WhatsApp com Rastreamento Meta */}
+      <a
+        href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent("Olá! Vim pela Landing Page da Solution Place Blindagem e gostaria de falar com um consultor.")}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => {
+          if (typeof window !== "undefined" && (window as any).fbq) {
+            (window as any).fbq("track", "Contact");
+          }
+        }}
+        className="fixed bottom-5 right-5 z-40 p-3.5 sm:p-4 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white shadow-[0_6px_25px_rgba(37,211,102,0.45)] hover:shadow-[0_8px_30px_rgba(37,211,102,0.65)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+        aria-label="Fale conosco no WhatsApp"
+      >
+        <MessageSquare className="w-6 h-6 fill-current" />
+        <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs transition-all duration-300 ease-in-out text-xs font-bold pl-0 group-hover:pl-2">
+          WhatsApp
+        </span>
+      </a>
     </div>
   );
 }
