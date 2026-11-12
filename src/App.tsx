@@ -1073,41 +1073,39 @@ export default function SolutionPlaceLanding() {
               className="relative max-w-3xl w-full bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Botão fechar discreto no canto superior */}
+              <button
+                onClick={() => setSelectedGalleryImage(null)}
+                className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/70 hover:bg-black border border-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-all cursor-pointer"
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+
               <div className="relative max-h-[75vh] flex items-center justify-center bg-black">
                 <img
                   src={selectedGalleryImage.src}
-                  alt={selectedGalleryImage.title}
+                  alt="Veículo Blindado Solution Place"
                   className="max-h-[75vh] w-auto max-w-full object-contain"
                 />
               </div>
 
-              <div className="p-4 sm:p-5 flex items-center justify-between border-t border-zinc-900 bg-zinc-950">
-                <div>
-                  <span className="text-[10px] font-bold text-[#FF0D0D] uppercase tracking-wider">
-                    {selectedGalleryImage.tag}
-                  </span>
-                  <h3 className="text-sm sm:text-base font-bold text-white">
-                    {selectedGalleryImage.title}
-                  </h3>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedGalleryImage(null);
-                      scrollToForm();
-                    }}
-                    className="solution-red-button px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider text-white"
-                  >
-                    Cotar Este Modelo
-                  </button>
-                  <button
-                    onClick={() => setSelectedGalleryImage(null)}
-                    className="px-3 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white"
-                  >
-                    Fechar
-                  </button>
-                </div>
+              <div className="p-4 sm:p-5 flex items-center justify-end gap-3 border-t border-zinc-900 bg-zinc-950">
+                <button
+                  onClick={() => {
+                    setSelectedGalleryImage(null);
+                    scrollToForm();
+                  }}
+                  className="w-full sm:w-auto solution-red-button px-6 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-white active:scale-95 transition-all text-center"
+                >
+                  Fale com um consultor
+                </button>
+                <button
+                  onClick={() => setSelectedGalleryImage(null)}
+                  className="px-4 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white active:scale-95 transition-all"
+                >
+                  Fechar
+                </button>
               </div>
             </div>
           </div>
