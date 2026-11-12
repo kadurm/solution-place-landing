@@ -891,7 +891,7 @@ export default function SolutionPlaceLanding() {
             <div className="w-16 h-1 bg-[#FF0D0D] mx-auto mt-2" />
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center">
             <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center">
               <span className="text-xs sm:text-sm font-bold text-white tracking-wider">JAGUAR LAND ROVER</span>
               <span className="text-[10px] text-[#FF0D0D] font-medium mt-1">Certificação Oficial de Fábrica</span>
@@ -900,11 +900,6 @@ export default function SolutionPlaceLanding() {
             <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center">
               <span className="text-xs sm:text-sm font-bold text-white tracking-wider">MOTOR GROUP BRASIL</span>
               <span className="text-[10px] text-[#FF0D0D] font-medium mt-1">Blindadora Oficial</span>
-            </div>
-
-            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center">
-              <span className="text-xs sm:text-sm font-bold text-white tracking-wider">GRUPO AB</span>
-              <span className="text-[10px] text-zinc-400 font-normal mt-1">Rede de Concessionárias RJ</span>
             </div>
 
             <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center">
@@ -917,7 +912,7 @@ export default function SolutionPlaceLanding() {
               <span className="text-[10px] text-zinc-400 font-normal mt-1">Superesportivos & Luxo</span>
             </div>
 
-            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center">
+            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900 flex flex-col items-center justify-center col-span-2 sm:col-span-1">
               <span className="text-xs sm:text-sm font-bold text-white tracking-wider">GWM AMÉRICAS</span>
               <span className="text-[10px] text-zinc-400 font-normal mt-1">Híbridos & Elétricos</span>
             </div>
