@@ -29,6 +29,8 @@ const DISPLAY_PHONE = "(21) 99695-8082";
 interface FormData {
   nome: string;
   telefone: string;
+  marca: string;
+  modelo: string;
   veiculo: string;
   ano: string;
   aceitePrivacidade: boolean;
@@ -128,20 +130,41 @@ export default function SolutionPlaceLanding() {
   const [formData, setFormData] = useState<FormData>({
     nome: "",
     telefone: "",
+    marca: "",
+    modelo: "",
     veiculo: "",
     ano: "",
     aceitePrivacidade: true,
   });
 
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  // Identifica a marca ativa (por clique no botão ou pelo que foi digitado)
-  const activeBrandCatalog = vehicleCatalog.find((b) => {
-    if (selectedBrand === b.brand) return true;
-    if (formData.veiculo.toLowerCase().startsWith(b.brand.toLowerCase())) return true;
-    return false;
-  });
+  // Identifica o catálogo da marca selecionada
+  const activeBrandCatalog = vehicleCatalog.find(
+    (b) => b.brand.toLowerCase() === formData.marca.trim().toLowerCase()
+  );
+
+  const handleMarcaSelect = (brandName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      marca: brandName,
+      veiculo: prev.modelo ? `${brandName} ${prev.modelo}`.trim() : brandName,
+    }));
+    if (formErrors.marca) {
+      setFormErrors((prev) => ({ ...prev, marca: "" }));
+    }
+  };
+
+  const handleModeloSelect = (modelName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      modelo: modelName,
+      veiculo: prev.marca ? `${prev.marca} ${modelName}`.trim() : modelName,
+    }));
+    if (formErrors.modelo) {
+      setFormErrors((prev) => ({ ...prev, modelo: "" }));
+    }
+  };
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [lastSubmittedLead, setLastSubmittedLead] = useState<FormData | null>(null);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -371,19 +394,14 @@ export default function SolutionPlaceLanding() {
     if (!cleanPhone || cleanPhone.length < 10) {
       errors.telefone = "Informe um WhatsApp válido com DDD (ex: 21 99999-9999).";
     }
-    const veiculoTrim = formData.veiculo.trim();
-    if (!veiculoTrim) {
-      errors.veiculo = "Informe a marca e o modelo do seu veículo.";
-    } else {
-      // Se informou apenas a marca sem modelo específico
-      const isOnlyBrand = vehicleCatalog.some(
-        (b) => b.brand.toLowerCase() === veiculoTrim.toLowerCase()
-      );
-      if (isOnlyBrand) {
-        errors.veiculo = `Por favor, selecione ou digite o modelo específico da ${veiculoTrim} (ex: ${
-          veiculoTrim === "BMW" ? "X5, 320i, X3" : veiculoTrim === "Land Rover" ? "Defender 110, Discovery" : "Cayenne, Macan"
-        }) para calcularmos o orçamento.`;
-      }
+    if (!formData.marca.trim()) {
+      errors.marca = "Por favor, selecione ou digite a marca do veículo.";
+    }
+    const modeloTrim = formData.modelo.trim();
+    if (!modeloTrim) {
+      errors.modelo = "Por favor, selecione ou digite o modelo do veículo.";
+    } else if (modeloTrim.length < 2) {
+      errors.modelo = "Por favor, informe o modelo completo (ex: Defender 110, X5, Cayenne) para enviarmos o orçamento.";
     }
     if (!formData.ano.trim()) {
       errors.ano = "Selecione ou digite o ano do veículo.";
@@ -397,13 +415,16 @@ export default function SolutionPlaceLanding() {
   };
 
   const generateWhatsAppUrl = (data: FormData) => {
+    const marca = data.marca.trim();
+    const modelo = data.modelo.trim();
     const text = 
       `*Olá! Seja bem-vindo(a) à Solution Place Blindagem.*\n` +
       `Gostaria de iniciar meu atendimento exclusivo de blindagem boutique.\n\n` +
       `📋 *Ficha Técnica do Lead:*\n` +
       `👤 *Nome:* ${data.nome.trim()}\n` +
       `📱 *WhatsApp:* ${data.telefone.trim()}\n` +
-      `🚗 *Veículo:* ${data.veiculo.trim()}\n` +
+      `🏷️ *Marca:* ${marca}\n` +
+      `🚗 *Modelo:* ${modelo}\n` +
       `📅 *Ano do Veículo:* ${data.ano.trim()}\n\n` +
       `_Enviado através da Landing Page Oficial Solution Place Blindagem._`;
 
@@ -790,69 +811,87 @@ export default function SolutionPlaceLanding() {
                 )}
               </div>
 
-              {/* CAMPO 2: QUAL SEU VEÍCULO E MODELO */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
-                    2. Qual seu veículo e modelo: <span className="text-[#FF0D0D]">*</span>
-                  </label>
-                  <span className="text-[10px] text-zinc-500 font-normal">
-                    Orçamento por modelo
-                  </span>
-                </div>
+              {/* CAMPO 2: MARCA DO VEÍCULO */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                  2. Marca do Veículo: <span className="text-[#FF0D0D]">*</span>
+                </label>
                 
-                {/* 1. Seleção Rápida da Marca */}
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-medium text-zinc-400">
-                    Selecione a marca:
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {vehicleCatalog.map(({ brand }) => {
-                      const isBrandActive = selectedBrand === brand || formData.veiculo.toLowerCase().startsWith(brand.toLowerCase());
-                      return (
-                        <button
-                          key={brand}
-                          type="button"
-                          onClick={() => {
-                            setSelectedBrand(brand);
-                            if (!formData.veiculo.toLowerCase().startsWith(brand.toLowerCase())) {
-                              handleInputChange("veiculo", brand + " ");
-                            }
-                          }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                            isBrandActive
-                              ? "bg-[#FF0D0D] text-white border-[#FF0D0D] shadow-sm scale-[1.02]"
-                              : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 active:scale-95"
-                          }`}
-                        >
-                          {brand}
-                        </button>
-                      );
-                    })}
-                  </div>
+                {/* Botões Rápidos de Marcas */}
+                <div className="flex flex-wrap gap-1.5 pb-1">
+                  {vehicleCatalog.map(({ brand }) => {
+                    const isBrandActive = formData.marca.toLowerCase() === brand.toLowerCase();
+                    return (
+                      <button
+                        key={brand}
+                        type="button"
+                        onClick={() => handleMarcaSelect(brand)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                          isBrandActive
+                            ? "bg-[#FF0D0D] text-white border-[#FF0D0D] shadow-sm scale-[1.02]"
+                            : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 active:scale-95"
+                        }`}
+                      >
+                        {brand}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                {/* 2. Seleção Dinâmica do Modelo (aparece com os modelos clicáveis da marca selecionada) */}
+                {/* Barra de escrita distinta para a Marca */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={formData.marca}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        marca: val,
+                        veiculo: `${val} ${prev.modelo}`.trim(),
+                      }));
+                      if (formErrors.marca) setFormErrors((prev) => ({ ...prev, marca: "" }));
+                    }}
+                    placeholder="Ou digite a marca do veículo (ex: Land Rover, BMW, Porsche...)"
+                    className={`w-full pl-10 pr-4 py-3.5 rounded-lg bg-zinc-950 border ${
+                      formErrors.marca ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800 focus:border-[#FF0D0D]"
+                    } text-white placeholder-zinc-600 text-sm focus:outline-none transition-all`}
+                  />
+                </div>
+                {formErrors.marca && (
+                  <p className="text-red-400 text-xs font-medium pl-1">{formErrors.marca}</p>
+                )}
+              </div>
+
+              {/* CAMPO 3: MODELO DO VEÍCULO (BARRA DE ESCRITA SEPARADA) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                    3. Modelo do Veículo: <span className="text-[#FF0D0D]">*</span>
+                  </label>
+                  <span className="text-[10px] text-zinc-500 font-normal">
+                    Orçamento calculado por modelo
+                  </span>
+                </div>
+
+                {/* Modelos frequentes da marca selecionada */}
                 {activeBrandCatalog && activeBrandCatalog.models.length > 0 && (
-                  <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-2 animate-in fade-in duration-200">
-                    <div className="text-[11px] font-semibold text-zinc-300 flex items-center justify-between">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF0D0D]"></span>
-                        <span>Selecione o modelo ({activeBrandCatalog.brand}):</span>
-                      </span>
-                      <span className="text-[10px] text-zinc-500 font-normal">ou digite abaixo</span>
+                  <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-1.5 animate-in fade-in duration-200">
+                    <div className="text-[11px] font-semibold text-zinc-300 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF0D0D]"></span>
+                      <span>Modelos frequentes ({activeBrandCatalog.brand}):</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {activeBrandCatalog.models.map((modelName) => {
-                        const fullVehicle = `${activeBrandCatalog.brand} ${modelName}`;
-                        const isModelActive = formData.veiculo === fullVehicle || formData.veiculo.includes(modelName);
+                        const isModelActive = formData.modelo.toLowerCase() === modelName.toLowerCase();
                         return (
                           <button
                             key={modelName}
                             type="button"
-                            onClick={() => {
-                              handleInputChange("veiculo", fullVehicle);
-                            }}
+                            onClick={() => handleModeloSelect(modelName)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                               isModelActive
                                 ? "bg-white text-black border-white shadow-md font-bold scale-[1.02]"
@@ -867,41 +906,38 @@ export default function SolutionPlaceLanding() {
                   </div>
                 )}
 
-                {/* 3. Campo de texto livre para escrever ou complementar modelo / versão específica */}
-                <div className="space-y-1 pt-0.5">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
-                      <Car className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.veiculo}
-                      onChange={(e) => {
-                        handleInputChange("veiculo", e.target.value);
-                        const typed = e.target.value.toLowerCase();
-                        const found = vehicleCatalog.find((b) => typed.includes(b.brand.toLowerCase()));
-                        if (found) setSelectedBrand(found.brand);
-                      }}
-                      placeholder="Ou digite o modelo / versão específica (ex: BMW X5 M Sport, Defender 110...)"
-                      className={`w-full pl-10 pr-4 py-3.5 rounded-lg bg-zinc-950 border ${
-                        formErrors.veiculo ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800 focus:border-[#FF0D0D]"
-                      } text-white placeholder-zinc-600 text-sm focus:outline-none transition-all`}
-                    />
+                {/* Barra de escrita distinta para o Modelo */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                    <Car className="w-4 h-4" />
                   </div>
-                  <p className="text-[11px] text-zinc-500 pl-1">
-                    Você pode selecionar o modelo clicando acima ou digitar livremente a versão do seu carro.
-                  </p>
+                  <input
+                    type="text"
+                    value={formData.modelo}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        modelo: val,
+                        veiculo: `${prev.marca} ${val}`.trim(),
+                      }));
+                      if (formErrors.modelo) setFormErrors((prev) => ({ ...prev, modelo: "" }));
+                    }}
+                    placeholder="Digite ou selecione o modelo (ex: Defender 110, X5 M Sport, Cayenne Coupé...)"
+                    className={`w-full pl-10 pr-4 py-3.5 rounded-lg bg-zinc-950 border ${
+                      formErrors.modelo ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800 focus:border-[#FF0D0D]"
+                    } text-white placeholder-zinc-600 text-sm focus:outline-none transition-all`}
+                  />
                 </div>
-
-                {formErrors.veiculo && (
-                  <p className="text-red-400 text-xs font-medium pl-1">{formErrors.veiculo}</p>
+                {formErrors.modelo && (
+                  <p className="text-red-400 text-xs font-medium pl-1">{formErrors.modelo}</p>
                 )}
               </div>
 
-              {/* CAMPO 3: ANO DO VEÍCULO */}
+              {/* CAMPO 4: ANO DO VEÍCULO */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
-                  3. Ano do veículo: <span className="text-[#FF0D0D]">*</span>
+                  4. Ano do veículo: <span className="text-[#FF0D0D]">*</span>
                 </label>
 
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -994,7 +1030,7 @@ export default function SolutionPlaceLanding() {
 
               <div className="p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-left text-xs space-y-1">
                 <div className="text-[#FF0D0D] font-bold text-[10px] uppercase tracking-wider">Ficha de Atendimento:</div>
-                <div className="text-zinc-300"><strong>Veículo:</strong> {lastSubmittedLead?.veiculo} ({lastSubmittedLead?.ano})</div>
+                <div className="text-zinc-300"><strong>Veículo:</strong> {lastSubmittedLead?.marca ? `${lastSubmittedLead.marca} ${lastSubmittedLead.modelo}` : lastSubmittedLead?.veiculo} ({lastSubmittedLead?.ano})</div>
                 <div className="text-zinc-300"><strong>Contato:</strong> {lastSubmittedLead?.telefone}</div>
               </div>
 
