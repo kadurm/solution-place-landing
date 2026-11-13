@@ -64,7 +64,11 @@ export default async function handler(req, res) {
     };
 
     const pixelId = '2556496231513472';
-    const accessToken = process.env.META_ACCESS_TOKEN || 'EAASrkfzOOusBS5eZAn0CAoFhSWhfge8m7ZAs0qxKSH6uztaWMiuq29PSWEkUyyvr0aBQWnuGSLSl5xZC9ZCW2xjOV3MG0ZAEiR1pk83bp1fZAZAZADF3EsujUQF3YRbT1MUoCEwJtMqqO7Xg6zDe6dD3UpJEugjXMiUdLZCGMB1y8s8XSXZAI17FzZCf9nYCF4as7SI9AZDZD';
+    const accessToken = process.env.META_ACCESS_TOKEN;
+    if (!accessToken) {
+      console.error('Meta CAPI: META_ACCESS_TOKEN não configurado');
+      return res.status(500).json({ error: 'CAPI não configurada' });
+    }
 
     const response = await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`, {
       method: 'POST',

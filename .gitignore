@@ -13,3 +13,16 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Variáveis de ambiente e credenciais (blindagem DevOps)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+firebase-key.json
+*serviceAccount*.json
+credentials*.json
+client_secret*.json

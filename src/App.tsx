@@ -88,6 +88,42 @@ const vehicleGallery = [
   },
 ];
 
+// Catálogo de Marcas e seus Modelos mais cotados para blindagem de luxo
+const vehicleCatalog = [
+  {
+    brand: "Land Rover",
+    models: ["Defender 110", "Defender 90", "Range Rover Sport", "Range Rover Vogue", "Discovery", "Velar", "Evoque"],
+  },
+  {
+    brand: "Porsche",
+    models: ["Cayenne", "Macan", "Panamera", "Taycan", "911"],
+  },
+  {
+    brand: "BMW",
+    models: ["X5", "X3", "X6", "X1", "320i", "Série 5", "iX"],
+  },
+  {
+    brand: "Mercedes-Benz",
+    models: ["GLE", "GLC", "GLS", "Classe C", "Classe G", "Classe E", "EQA / EQB / EQE"],
+  },
+  {
+    brand: "Volvo",
+    models: ["XC90", "XC60", "XC40", "EX30", "EX90"],
+  },
+  {
+    brand: "BYD / GWM",
+    models: ["BYD Song Plus", "BYD Seal", "BYD Tan", "BYD Yuan Plus", "Haval H6", "Tank 300"],
+  },
+  {
+    brand: "Jaguar",
+    models: ["F-Pace", "E-Pace", "I-Pace"],
+  },
+  {
+    brand: "Audi",
+    models: ["Q8", "Q7", "Q5", "Q3", "A3 / A4 / A5", "e-tron"],
+  },
+];
+
 export default function SolutionPlaceLanding() {
   const [formData, setFormData] = useState<FormData>({
     nome: "",
@@ -97,7 +133,15 @@ export default function SolutionPlaceLanding() {
     aceitePrivacidade: true,
   });
 
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Identifica a marca ativa (por clique no botão ou pelo que foi digitado)
+  const activeBrandCatalog = vehicleCatalog.find((b) => {
+    if (selectedBrand === b.brand) return true;
+    if (formData.veiculo.toLowerCase().startsWith(b.brand.toLowerCase())) return true;
+    return false;
+  });
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [lastSubmittedLead, setLastSubmittedLead] = useState<FormData | null>(null);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
@@ -327,8 +371,19 @@ export default function SolutionPlaceLanding() {
     if (!cleanPhone || cleanPhone.length < 10) {
       errors.telefone = "Informe um WhatsApp válido com DDD (ex: 21 99999-9999).";
     }
-    if (!formData.veiculo.trim()) {
-      errors.veiculo = "Informe a marca e modelo do seu veículo.";
+    const veiculoTrim = formData.veiculo.trim();
+    if (!veiculoTrim) {
+      errors.veiculo = "Informe a marca e o modelo do seu veículo.";
+    } else {
+      // Se informou apenas a marca sem modelo específico
+      const isOnlyBrand = vehicleCatalog.some(
+        (b) => b.brand.toLowerCase() === veiculoTrim.toLowerCase()
+      );
+      if (isOnlyBrand) {
+        errors.veiculo = `Por favor, selecione ou digite o modelo específico da ${veiculoTrim} (ex: ${
+          veiculoTrim === "BMW" ? "X5, 320i, X3" : veiculoTrim === "Land Rover" ? "Defender 110, Discovery" : "Cayenne, Macan"
+        }) para calcularmos o orçamento.`;
+      }
     }
     if (!formData.ano.trim()) {
       errors.ano = "Selecione ou digite o ano do veículo.";
@@ -413,6 +468,31 @@ export default function SolutionPlaceLanding() {
       }).catch((capiErr) => console.error("Erro CAPI:", capiErr));
     } catch {
       // Ignora erro assíncrono para não interromper a conversão do usuário
+    }
+
+    // 3. Envio ao CRM do KrM Ads (via função serverless /api/lead)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const utm: Record<string, string> = {};
+      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "fbclid"].forEach((k) => {
+        const v = params.get(k);
+        if (v) utm[k] = v;
+      });
+      fetch("/api/lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          nome: formData.nome.trim(),
+          telefone: cleanPhone,
+          veiculo: formData.veiculo,
+          ano: formData.ano,
+          utm,
+          pagina: window.location.origin + window.location.pathname,
+        }),
+      }).catch((crmErr) => console.error("Erro CRM:", crmErr));
+    } catch {
+      // Não bloqueia a conversão do usuário
     }
 
     // Salva histórico de lead no navegador
@@ -710,44 +790,109 @@ export default function SolutionPlaceLanding() {
                 )}
               </div>
 
-              {/* CAMPO 2: QUAL SEU VEÍCULO */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
-                  2. Qual seu veículo: <span className="text-[#FF0D0D]">*</span>
-                </label>
+              {/* CAMPO 2: QUAL SEU VEÍCULO E MODELO */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                    2. Qual seu veículo e modelo: <span className="text-[#FF0D0D]">*</span>
+                  </label>
+                  <span className="text-[10px] text-zinc-500 font-normal">
+                    Orçamento por modelo
+                  </span>
+                </div>
                 
-                {/* Atalhos rápidos para marcas de luxo no mobile */}
-                <div className="flex flex-wrap gap-1.5 pb-1">
-                  {quickVehicleOptions.map((brand) => (
-                    <button
-                      key={brand}
-                      type="button"
-                      onClick={() => handleInputChange("veiculo", brand)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                        formData.veiculo.startsWith(brand)
-                          ? "bg-[#FF0D0D] text-white border-[#FF0D0D] shadow-sm"
-                          : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 active:scale-95"
-                      }`}
-                    >
-                      {brand}
-                    </button>
-                  ))}
+                {/* 1. Seleção Rápida da Marca */}
+                <div className="space-y-1.5">
+                  <div className="text-[11px] font-medium text-zinc-400">
+                    Selecione a marca:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {vehicleCatalog.map(({ brand }) => {
+                      const isBrandActive = selectedBrand === brand || formData.veiculo.toLowerCase().startsWith(brand.toLowerCase());
+                      return (
+                        <button
+                          key={brand}
+                          type="button"
+                          onClick={() => {
+                            setSelectedBrand(brand);
+                            if (!formData.veiculo.toLowerCase().startsWith(brand.toLowerCase())) {
+                              handleInputChange("veiculo", brand + " ");
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                            isBrandActive
+                              ? "bg-[#FF0D0D] text-white border-[#FF0D0D] shadow-sm scale-[1.02]"
+                              : "bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700 active:scale-95"
+                          }`}
+                        >
+                          {brand}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
-                    <Car className="w-4 h-4" />
+                {/* 2. Seleção Dinâmica do Modelo (aparece com os modelos clicáveis da marca selecionada) */}
+                {activeBrandCatalog && activeBrandCatalog.models.length > 0 && (
+                  <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/90 space-y-2 animate-in fade-in duration-200">
+                    <div className="text-[11px] font-semibold text-zinc-300 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#FF0D0D]"></span>
+                        <span>Selecione o modelo ({activeBrandCatalog.brand}):</span>
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-normal">ou digite abaixo</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {activeBrandCatalog.models.map((modelName) => {
+                        const fullVehicle = `${activeBrandCatalog.brand} ${modelName}`;
+                        const isModelActive = formData.veiculo === fullVehicle || formData.veiculo.includes(modelName);
+                        return (
+                          <button
+                            key={modelName}
+                            type="button"
+                            onClick={() => {
+                              handleInputChange("veiculo", fullVehicle);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                              isModelActive
+                                ? "bg-white text-black border-white shadow-md font-bold scale-[1.02]"
+                                : "bg-zinc-900/90 text-zinc-300 border-zinc-800 hover:border-zinc-600 hover:text-white active:scale-95"
+                            }`}
+                          >
+                            {modelName}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    value={formData.veiculo}
-                    onChange={(e) => handleInputChange("veiculo", e.target.value)}
-                    placeholder="Ex: Range Rover Defender / Porsche Macan / BMW X5"
-                    className={`w-full pl-10 pr-4 py-3.5 rounded-lg bg-zinc-950 border ${
-                      formErrors.veiculo ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800 focus:border-[#FF0D0D]"
-                    } text-white placeholder-zinc-600 text-sm focus:outline-none transition-all`}
-                  />
+                )}
+
+                {/* 3. Campo de texto livre para escrever ou complementar modelo / versão específica */}
+                <div className="space-y-1 pt-0.5">
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
+                      <Car className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.veiculo}
+                      onChange={(e) => {
+                        handleInputChange("veiculo", e.target.value);
+                        const typed = e.target.value.toLowerCase();
+                        const found = vehicleCatalog.find((b) => typed.includes(b.brand.toLowerCase()));
+                        if (found) setSelectedBrand(found.brand);
+                      }}
+                      placeholder="Ou digite o modelo / versão específica (ex: BMW X5 M Sport, Defender 110...)"
+                      className={`w-full pl-10 pr-4 py-3.5 rounded-lg bg-zinc-950 border ${
+                        formErrors.veiculo ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800 focus:border-[#FF0D0D]"
+                      } text-white placeholder-zinc-600 text-sm focus:outline-none transition-all`}
+                    />
+                  </div>
+                  <p className="text-[11px] text-zinc-500 pl-1">
+                    Você pode selecionar o modelo clicando acima ou digitar livremente a versão do seu carro.
+                  </p>
                 </div>
+
                 {formErrors.veiculo && (
                   <p className="text-red-400 text-xs font-medium pl-1">{formErrors.veiculo}</p>
                 )}
